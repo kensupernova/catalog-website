@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block headinfo %}
+<title>{{item.name}}</title>
+{% endblock %}
+
+
+{% block content %}
+
+{% include "header.html" %}
+
+<div class="item-container col-md-12">
+	<div class="item-name"><span>Item name: </span><p>{{item.name}}</p></div>
+	<div class="item-category"><span>Item category: </span><p>{{item.category.name}}</p></div>
+	<div class="item-description"><span>Description name: </span><p>{{item.description}}</p></div>
+	
+</div>
+
+<div class="item-action-container">
+	<span>
+		<a href="{{url_for('editItem', item=item.name, cate=item.category.name)}}">Edit</a>
+	</span> 
+
+	<span><a href="{{url_for('deleteItem', item=item.name, cate=item.category.name)}}">Delete</a></span>
+</div>
+
+{% endblock %}

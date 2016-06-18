@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% include "header.html" %}
+	
+
+	<div class = 'flash text-center'>
+		{% with messages = get_flashed_messages() %}
+	        {% if messages %}    
+		        <ul>
+		        {% for message in messages %}
+		            <li> <strong> {{ message }} </strong> </li>
+		        {% endfor %}
+		        </ul>
+	        {% endif %}
+	    {% endwith %}
+
+	</div>
+
+	<div class="row">
+		<aside class="col-md-4">
+			<div class=""><h1>Categories</h1></div>
+			<a href="{{url_for('newCategory')}}">
+				<button class="btn btn-default" id="add-category">
+					Add New Category
+				</button>
+			</a>
+			<div class="category-list">
+			{% if clicked_cate%}
+				{% for cate in cates %}
+					{% if cate.name==clicked_cate.name %}
+						
+						<h3 style="background:gray; color:white;"><a href="{{url_for('viewItems', cate=cate.name)}}" style="color:white;">{{cate.name}}</a></h3>
+					{% else %}
+						<h3><a href="{{url_for('viewItems', cate=cate.name)}}">{{cate.name}}</a></h3>
+					{% endif %}
+					
+				{% endfor %}
+			{% else %}
+				{% for cate in cates %}
+			
+					<h3><a href="{{url_for('viewItems', cate=cate.name)}}">{{cate.name}}</a></h3>
+					
+				{% endfor %}
+			{% endif %}
+			</div>
+			
+		</aside>
+
+		<div class="item-container col-md-8">
+			<div class="items-title"><h1>{{items_title}}</h1></div>
+
+			<a href="{{url_for('newItem')}}">
+				<button class="btn btn-default" id="add-category">
+					Add New Item
+				</button>
+			</a>
+
+			<ul class="item-list">
+			{% for item in items %}
+				<li class="">
+					<h3><a href="{{url_for('viewItem', cate=item.category.name, item=item.name)}}">{{item.name}}</a></h3>
+				</li>
+			{% endfor %}
+				
+			</ul>
+			
+		</div>
+	</div>
+	
+	
+
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block headinfo%}
+<title>Edit new category</title>
+{% endblock %}
+
+{% block content %}
+{% include "header.html" %}
+<div><h1>Edit category</h1></div>
+<form class="add-new-category-container col-md-12"  method="POST" action="{{url_for('editCategory', cate=cate.name)}}">
+	<label for="new-category-name" class=' new-category-name col-md-12'>
+		<span class='col-md-1'>Name: </span><input class="new-category-name col-md-6" id="new-category-name" type="text" name="name" value="{{cate.name}}">
+	</label>
+	<label for="new-category-description" class='new-category-description col-md-12'>
+		<span class='col-md-1'>Description:</span> <textarea class="new-category-description col-md-6" id="new-category-description" type="text" name="description">
+		{{cate.description}}
+		</textarea>
+	</label>
+	<div class='col-md-12'><input class="new-category-submit" type="submit" value="Submit"></div>
+</form>
+
+{% if error %}
+<div class="category-error">
+	<p>error</p>
+</div>
+{% endif %}
+{% endblock %}

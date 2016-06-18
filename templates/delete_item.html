@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block headinfo %}
+<title>{{item.name}}</title>
+{% endblock %}
+
+
+{% block content %}
+
+{% include "header.html" %}
+
+<div class="item-container col-md-12">
+	<div class="item-name"><span>Item name: </span><p>{{item.name}}</p></div>
+	<div class="item-category"><span>Item category: </span><p>{{item.category.name}}</p></div>
+	<div class="item-description"><span>Description name: </span><p>{{item.description}}</p></div>
+	
+</div>
+
+<div class="item-delete-container">
+	<p>Are you sure you want to delete this item? </p>
+	<form method="POST" 
+		url="{{url_for('deleteItem', item=item.name, cate=item.category.name)}}">
+		<input class="new-item-submit" type="submit" value="Yes">
+	</form>
+	<button><a href="">No</a></button>
+</div>
+
+{% endblock %}

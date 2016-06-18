@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block headinfo%}
+<title>View category</title>
+{% endblock %}
+
+{% block content %}
+
+{% include "header.html" %}
+
+<div class="col-md-12"><h1>View category</h1></div>
+<label for="new-category-name" class=' new-category-name col-md-12'>
+	<span class='col-md-2'>Name: </span>{{cate.name}}
+</label>
+<label for="new-category-description" class='new-category-description col-md-12'>
+	<span class='col-md-2'>Description:</span> 
+	{{cate.description}}
+</label>
+
+<div class="item-action-container col-md-6">
+	<span>
+		<a href="{{url_for('editCategory', cate=cate.name)}}">Edit</a>
+	</span> 
+
+	<span><a href="{{url_for('deleteCategory', cate=cate.name)}}">Delete</a></span>
+</div>
+
+{% if error %}
+<div class="category-error">
+	<p>error</p>
+</div>
+{% endif %}
+{% endblock %}

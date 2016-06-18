@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block headinfo%}
+<title>Add new item</title>
+{% endblock %}
+
+{% block content %}
+{% include "header.html" %}
+<div class="new-item-title"><h1>Add new item</h1></div>
+
+<form class="new-item-container col-md-12" method="POST" action="{{url_for('newItem')}}">
+    
+    <div><span class='col-md-2'>Name: </span>
+        <input class="new-item-name col-md-10" id="new-item-name" type="text" name="item-name" value="{{name}}">
+    </div>
+    <div class="new-item-category-container"><span class='col-md-2'>Category:</span>
+        <select class="ui dropdown col-md-2 new-item-category" name='item-category'>
+          <option value="-1">Add new category</option>
+          {% for cate in cates %}
+          <option value="{{loop.index}}">{{cate.name}}</option>
+          {% endfor %}
+        </select>
+    
+    </div>
+    <div><span class='col-md-2'>Description:</span>
+        <textarea class="new-item-description col-md-10" id="new-item-description" type="text" name="item-description">
+            {{description}}
+        </textarea>
+    </div>
+    
+    <div class='col-md-12'><input class="new-item-submit" type="submit" value="Submit"></div>
+</form>
+
+{% if error %}
+<div class="error">
+    <p>{{error}}</p>
+</div>
+{% endif %}
+
+{% endblock %}

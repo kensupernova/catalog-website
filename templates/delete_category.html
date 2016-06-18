@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block headinfo%}
+<title>Edit new category</title>
+{% endblock %}
+
+{% block content %}
+{% include "header.html" %}
+<div><h1>Delete category</h1></div>
+<label for="new-category-name" class=' new-category-name col-md-12'>
+		<span class='col-md-2'>Name: </span>{{cate.name}}
+</label>
+<label for="new-category-description" class='new-category-description col-md-12'>
+	<span class='col-md-2'>Description:</span> 
+	{{cate.description}}
+</label>
+<label class='col-md-12'>
+Are you sure to delete the category? You will delete all the items in that category!
+</label>
+
+<div class="delete-category-container" >
+	<form method="POST" 
+			url="{{url_for('deleteCategory', cate=cate.name)}}">
+		
+	<input class="new-category-submit" type="submit" value="Yes">
+	</form>
+	<button><a href="">No</a></button>
+
+</div>
+{% if error %}
+<div class="category-error">
+	<p>error</p>
+</div>
+{% endif %}
+{% endblock %}
