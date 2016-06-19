@@ -23,7 +23,7 @@ Are you sure to delete the category? You will delete all the items in that categ
 		
 	<input class="new-category-submit" type="submit" value="Yes">
 	</form>
-	<button><a href="">No</a></button>
+	<button><a href="{{url_for('viewCategory', cate=cate.name)}}">No</a></button>
 
 </div>
 {% if error %}

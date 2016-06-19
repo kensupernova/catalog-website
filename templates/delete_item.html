@@ -21,7 +21,7 @@
 		url="{{url_for('deleteItem', item=item.name, cate=item.category.name)}}">
 		<input class="new-item-submit" type="submit" value="Yes">
 	</form>
-	<button><a href="">No</a></button>
+	<button><a href="{{url_for('viewItem', , cate=item.category.name, item=item.name)}}">No</a></button>
 </div>
 
 {% endblock %}

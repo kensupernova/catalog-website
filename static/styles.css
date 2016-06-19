@@ -1,6 +1,8 @@
 * {
 	font-family: "Helvetica Neue Bold", Roboto, Helvetica, Arial, sans-serif;
 	font-weight: 700;
+	margin:0;
+	padding:0;
 }
 
 ul{
@@ -102,7 +104,16 @@ select.dropdown{
 	height:30px;
 
 }
+.item-container{
+	padding:0;
+}
+.items-container{
+	padding:0;
+}
 
+.category-container{
+	padding:0;
+}
 .item-delete-container form{
 	display: inline-block;
 	width:60px;
@@ -146,4 +157,14 @@ select.dropdown{
 .delete-category-container button a:hover{
 	text-decoration: underline;
 	color: blue;
+}
+
+.category-name h1,
+.category-description p{
+	display: inline-block;
+}
+
+.category-owner, 
+.item-owner{
+	color:gray;
 }

@@ -11,6 +11,7 @@
 			{% else %}
 				<img class="avatar-image image-responsive" src="{{session['picture']}}" alt="{{ url_for('static', filename='blank_user.gif') }}" 
 				style="width:30px;height:30px;">
+				<a>{{session['username']}}</a>
 				<a href="{{url_for('disconnect')}}">Logout </a>
 			{% endif %}
 		</div>

@@ -47,24 +47,45 @@
 			
 		</aside>
 
-		<div class="items-container col-md-8">
-			<div class="items-title"><h1>{{items_title}}</h1></div>
+		<div class="">
+			<div class="category-container col-md-8">
+				<div class="category-name">
+					 <h2>Category:{{clicked_cate.name}}</h2>
+				</div>
+				<div class="category-description">
+					<p>{{clicked_cate.description}}</p>
+				</div>
+				<div class="category-owner">
+					<p>created by {{clicked_cate.user.name}}</p>
+				</div>
+				<div class="category-action-container">
+					<span>
+						<a href="{{url_for('editCategory', cate=clicked_cate.name)}}">Edit</a>
+					</span> 
 
-			<a href="{{url_for('newItem')}}">
-				<button class="btn btn-default" id="add-category">
-					Add New Item
-				</button>
-			</a>
+					<span><a href="{{url_for('deleteCategory', cate=clicked_cate.name)}}">Delete</a></span>
+				</div>
 
-			<ul class="item-list">
-			{% for item in items %}
-				<li class="">
-					<h3><a href="{{url_for('viewItem', cate=item.category.name, item=item.name)}}">{{item.name}}</a></h3>
-				</li>
-			{% endfor %}
+			</div>
+			<div class="items-container col-md-8">
+				<div class="items-title"><h1>{{items_title}}</h1></div>
+
+				<a href="{{url_for('newItem')}}">
+					<button class="btn btn-default" id="add-category">
+						Add New Item
+					</button>
+				</a>
+
+				<ul class="item-list">
+				{% for item in items %}
+					<li class="">
+						<h3><a href="{{url_for('viewItem', cate=item.category.name, item=item.name)}}">{{item.name}}</a></h3>
+					</li>
+				{% endfor %}
+					
+				</ul>
 				
-			</ul>
-			
+			</div>
 		</div>
 	</div>
 	

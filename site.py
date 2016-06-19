@@ -13,8 +13,13 @@ import json
 from flask import make_response
 import requests
 
+import re
+
 # import flask.ext.login as flask_login
 
+## view decorators
+from functools import wraps
+from flask import g
 
 app = Flask(__name__)
 
@@ -32,18 +37,18 @@ session = DBSession()
 
 ############################################### helpers 
 def validate_category_name(name):
-    return True
+    return name
 
 def validate_category_descrip(description):
-    return True
+    return description
 
 ### validate items inputs from users
 
 def validate_item_name(name):
-    return True
+    return name
 
 def validate_item_descrip(description):
-    return True
+    return description
 
 
 def validate_item_category(cate_index):
@@ -51,7 +56,7 @@ def validate_item_category(cate_index):
     cate = cates[cate_index]
     return cate.id
 
-# User Helper Functions
+############################## User Helper Functions
 
 def createUser(login_session):
     newUser = User(name=login_session['username'], email=login_session[
@@ -73,6 +78,52 @@ def getUserID(email):
         return user.id
     except:
         return None
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'username' not in login_session:
+        # if g.user is None:
+            flash('You are not allowed to access there, log in first!')
+            
+            return redirect(url_for('showLogin', next=request.url))
+        return f(*args, **kwargs)
+           
+        
+    return decorated_function
+
+def owner_required(cate=None, item=None):
+    obj = None
+    if cate:
+        obj = session.query(Category).filter_by(name=cate).one()
+    if item:
+        cate = session.query(Category).filter_by(name=cate).one()
+        obj = session.query(Item).filter_by(category_id=cate.id, name=item).first()
+
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not Obj:
+            return "<script>function myFunction() {alert('The requested object is None');}</script><body onload='myFunction()''>"
+        
+        if obj.user_id != login_session['user_id']:
+            return "<script>function myFunction() {alert('You are not authorized to edit the category. Please create your own category in order to edit.');}</script><body onload='myFunction()''>"
+
+    
+        return f(*args, **kwargs)
+    
+    return decorated_function
+
+# def owner_required(obj):
+#     def decorator(f):
+#         @wraps(f)
+#         def decorated_function(*args, **kwargs):
+#             if obj.user_id != login_session['user_id']:
+#                 return "<script>function myFunction() {alert('You are not authorized to edit the category. Please create your own category in order to edit.');}</script><body onload='myFunction()''>"
+#             else:
+#                 return f(*args, **kwargs)
+#         return decorated_function
+#     return decorator
+
 
 ######################################################### routing and handlers
 # Create anti-forgery state token
@@ -321,6 +372,7 @@ def viewItemJSON(cate, item):
     return jsonify(Items=item.serialize)
 
 ############################################################# routing
+
 @app.route('/')
 @app.route('/category/')
 def showCategories():
@@ -328,11 +380,12 @@ def showCategories():
     items = session.query(Item).order_by(desc(Item.created)).limit(10)
     return render_template('frontpage.html', clicked_cate=None, cates = cates, items=items, items_title="Lasted items")
 
-# Create a new restaurant
+# Create a new category
 @app.route('/category/new/', methods=['GET', 'POST'])
+@login_required
 def newCategory():
-    if 'username' not in login_session:
-        return redirect('/login')
+    # if 'username' not in login_session:
+    #     return redirect('/login')
 
     if request.method == 'POST':
         name = request.form['name']
@@ -357,7 +410,7 @@ def newCategory():
     else:
         return render_template('new_category.html')
 
-# # Edit a restaurant
+# # view a category
 @app.route('/category/<string:cate>/', methods=['GET'])
 def viewCategory(cate):
     cate = session.query(Category).filter_by(name=cate).one()
@@ -365,15 +418,19 @@ def viewCategory(cate):
         return render_template('view_category.html', cate = cate)
    
 
-# # Edit a restaurant
+# # Edit a category
+
 @app.route('/category/<string:cate>/edit/', methods=['GET', 'POST'])
+@login_required
+# @owner_required(cate=cate)
 def editCategory(cate):
     editCategory = session.query(Category).filter_by(name=cate).one()
-    if 'username' not in login_session:
-        return redirect('/login')
+    
+    # if 'username' not in login_session:
+    #     return redirect('/login')
 
     if editCategory.user_id != login_session['user_id']:
-        return "<script>function myFunction() {alert('You are not authorized to edit this restaurant. Please create your own restaurant in order to edit.');}</script><body onload='myFunction()''>"
+        return "<script>function myFunction() {alert('You are not authorized to edit the category. Please create your own category in order to edit.');}</script><body onload='myFunction()''>"
 
     if not editCategory:
         return render_template("404.html", requested_url=request.url)
@@ -395,16 +452,18 @@ def editCategory(cate):
           error ="Some inputs are not valid"
           return render_template('edit_category.html', cate=editCategory , error = error )
 
-# # Edit a restaurant
+# # delete a category
+
 @app.route('/category/<string:cate>/delete/', methods=['GET', 'POST'])
+@login_required
 def deleteCategory(cate):
     cate = session.query(Category).filter_by(name=cate).one()
 
-    if 'username' not in login_session:
-        return redirect('/login')
+    # if 'username' not in login_session:
+    #     return redirect('/login')
 
     if cate.user_id != login_session['user_id']:
-        return "<script>function myFunction() {alert('You are not authorized to edit this restaurant. Please create your own restaurant in order to edit.');}</script><body onload='myFunction()''>"
+        return "<script>function myFunction() {alert('You are not authorized to delete this category. Please create your own category in order to delete.');}</script><body onload='myFunction()''>"
 
     if request.method == "GET": 
         return render_template('delete_category.html', cate = cate)
@@ -415,7 +474,7 @@ def deleteCategory(cate):
         flash('Category %s Successfully deleted' % cate.name)
         session.commit()
 
-        ## delete the items in that category
+        ## delete all the items in that category
         items = session.query(Item).filter_by(category_id=cate.id).all()
         for item in items:
             session.delete(item)
@@ -437,7 +496,7 @@ def viewItems(cate):
         return render_template("404.html", requested_url=request.url)
     
     if request.method == "GET": 
-        return render_template('frontpage.html', items= items, cates=cates,
+        return render_template('view_items.html', items= items, cates=cates,
          clicked_cate = cate, items_title="Items in %s" % cate.name)
 
 ## view a item of a category
@@ -452,15 +511,15 @@ def viewItem(cate, item):
     if request.method == "GET": 
         return render_template('view_item.html', item = item)
 
+
 @app.route('/item/new/', methods=['GET', 'POST'])
+@login_required
 def newItem():
-    # if 'username' not in login_session:
-    #     return redirect('/login')
 
     cates = session.query(Category).order_by(desc(Category.created)).all()
 
-    if 'username' not in login_session:
-        return redirect('/login')
+    # if 'username' not in login_session:
+    #     return redirect('/login')
 
     if request.method == "GET":
         return render_template('new_item.html', cates= cates) 
@@ -497,8 +556,10 @@ def newItem():
 
           return render_template('new_item.html', cates=cates, name=name, description=description , error = error )
 
+## edit item
 
 @app.route('/category/<string:cate>/item/<string:item>/edit/', methods=['GET', 'POST'])
+@login_required
 def editItem(cate, item):
     # if 'username' not in login_session:
     #     return redirect('/login')
@@ -507,11 +568,11 @@ def editItem(cate, item):
     item = session.query(Item).filter_by(category_id=cate.id, name=item).first()
 
     ### check authentication and authority
-    if 'username' not in login_session:
-        return redirect('/login')
+    # if 'username' not in login_session:
+    #     return redirect('/login')
 
     if item.user_id != login_session['user_id']:
-        return "<script>function myFunction() {alert('You are not authorized to edit this restaurant. Please create your own restaurant in order to edit.');}</script><body onload='myFunction()''>"
+        return "<script>function myFunction() {alert('You are not authorized to edit this item. Please create your own item in order to edit.');}</script><body onload='myFunction()''>"
     
     if (not cate) or (not item):
         return render_template("404.html", requested_url=request.url)
@@ -538,8 +599,10 @@ def editItem(cate, item):
 
         return redirect(url_for('showCategories'))
 
+## delete a item
 
 @app.route('/category/<string:cate>/item/<string:item>/delete/', methods=['GET', 'POST'])
+@login_required
 def deleteItem(cate, item):
 
     cates = session.query(Category).order_by(desc(Category.created)).all()
@@ -547,11 +610,11 @@ def deleteItem(cate, item):
     item = session.query(Item).filter_by(category_id=cate.id, name=item).first()
 
     ### check authentication and authority
-    if 'username' not in login_session:
-        return redirect('/login')
+    # if 'username' not in login_session:
+    #     return redirect('/login')
 
     if item.user_id != login_session['user_id']:
-        return "<script>function myFunction() {alert('You are not authorized to edit this restaurant. Please create your own restaurant in order to edit.');}</script><body onload='myFunction()''>"
+        return "<script>function myFunction() {alert('You are not authorized to delete this item. Please create your own item in order to delete.');}</script><body onload='myFunction()''>"
     
     if (not cate) or (not item):
         return render_template("404.html", requested_url=request.url)
