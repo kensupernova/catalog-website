@@ -1,22 +1,9 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from db_setup import Base, Category, User, Item
+from db_setup import Base, Category, User, Item, get_engine, get_DBSession
 
-engine = create_engine('sqlite:///catalogwebsite.db')
-# Bind the engine to the metadata of the Base class so that the
-# declaratives can be accessed through a DBSession instance
-Base.metadata.bind = engine
-
-DBSession = sessionmaker(bind=engine)
-# A DBSession() instance establishes all conversations with the database
-# and represents a "staging zone" for all the objects loaded into the
-# database session object. Any change made against the objects in the
-# session won't be persisted into the database until you call
-# session.commit(). If you're not happy about the changes, you can
-# revert all of them back to the last commit by calling
-# session.rollback()
-session = DBSession()
+session = get_DBSession()
 
 ## clear out the database
 session.query(User).delete()
@@ -87,12 +74,12 @@ item2 = Item(user_id=User1.id, name="Baltimore Ravens", description="North",
 session.add(item2)
 session.commit()
 
-item3 = Item(user_id=User1.id, name="Houston Texans     ", description="South",
+item3 = Item(user_id=User1.id, name="Houston Texans", description="South",
                      category=cate3)
 session.add(item3)
 session.commit()
 
-item4 = Item(user_id=User1.id, name="Denver Broncos     ", description="West",
+item4 = Item(user_id=User1.id, name="Denver Broncos", description="West",
                      category=cate3)
 session.add(item4)
 session.commit()

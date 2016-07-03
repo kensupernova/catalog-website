@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, jsonify, url_for, flash
 from sqlalchemy import create_engine, asc, desc
 from sqlalchemy.orm import sessionmaker
-from db_setup import Base, Category, Item, User
+from db_setup import Base, Category, Item, User, get_engine, get_DBSession
 
 from flask import session as login_session
 import random
@@ -14,8 +14,7 @@ from flask import make_response
 import requests
 
 import re
-
-# import flask.ext.login as flask_login
+import os
 
 ## view decorators
 from functools import wraps
@@ -23,17 +22,15 @@ from flask import g
 
 app = Flask(__name__)
 
+google_client_secrets = os.path.join(os.path.abspath(os.path.dirname(__file__)), "google_client_secrets.json")
+fb_client_secrets = os.path.join(os.path.abspath(os.path.dirname(__file__)), "fb_client_secrets.json")
+
 CLIENT_ID = json.loads(
-    open('google_client_secrets.json', 'r').read())['web']['client_id']
+    open(google_client_secrets, 'r').read())['web']['client_id']
+
 APPLICATION_NAME = "Catelog Application"
 
-
-# Connect to Database and create database session
-engine = create_engine('sqlite:///catalogwebsite.db')
-Base.metadata.bind = engine
-
-DBSession = sessionmaker(bind=engine)
-session = DBSession()
+session = get_DBSession()
 
 ############################################### helpers 
 def validate_category_name(name):
@@ -83,7 +80,6 @@ def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'username' not in login_session:
-        # if g.user is None:
             flash('You are not allowed to access there, log in first!')
             
             return redirect(url_for('showLogin', next=request.url))
@@ -92,37 +88,19 @@ def login_required(f):
         
     return decorated_function
 
-def owner_required(cate=None, item=None):
-    obj = None
-    if cate:
-        obj = session.query(Category).filter_by(name=cate).one()
-    if item:
-        cate = session.query(Category).filter_by(name=cate).one()
-        obj = session.query(Item).filter_by(category_id=cate.id, name=item).first()
-
+def owner_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not Obj:
-            return "<script>function myFunction() {alert('The requested object is None');}</script><body onload='myFunction()''>"
-        
-        if obj.user_id != login_session['user_id']:
-            return "<script>function myFunction() {alert('You are not authorized to edit the category. Please create your own category in order to edit.');}</script><body onload='myFunction()''>"
+        if Category.user_id != login_session['user_id']:
+            flash('You are not the owner of this object. You ar not allowed to perform this action!')
+            return "<script>function myFunction() {alert('You are not the owner of this object. You are not authorized to perform this funtion.');}</script><body onload='myFunction()''>"
 
-    
+            return redirect(url_for('showLogin', next=request.url))
         return f(*args, **kwargs)
-    
+           
+        
     return decorated_function
 
-# def owner_required(obj):
-#     def decorator(f):
-#         @wraps(f)
-#         def decorated_function(*args, **kwargs):
-#             if obj.user_id != login_session['user_id']:
-#                 return "<script>function myFunction() {alert('You are not authorized to edit the category. Please create your own category in order to edit.');}</script><body onload='myFunction()''>"
-#             else:
-#                 return f(*args, **kwargs)
-#         return decorated_function
-#     return decorator
 
 
 ######################################################### routing and handlers
@@ -132,7 +110,6 @@ def showLogin():
     state = ''.join(random.choice(string.ascii_uppercase + string.digits)
                     for x in xrange(32))
     login_session['state'] = state
-    # return "The current session state is %s" % login_session['state']
     return render_template('login.html', STATE=state)
 
 # Disconnect based on provider
@@ -172,7 +149,7 @@ def gconnect():
 
     try:
         # Upgrade the authorization code into a credentials object
-        oauth_flow = flow_from_clientsecrets('google_client_secrets.json', scope='')
+        oauth_flow = flow_from_clientsecrets(google_client_secrets, scope='')
         oauth_flow.redirect_uri = 'postmessage'
         credentials = oauth_flow.step2_exchange(code)
     except FlowExchangeError:
@@ -281,10 +258,10 @@ def fbconnect():
     access_token = request.data
     print "access token received %s " % access_token
 
-    app_id = json.loads(open('fb_client_secrets.json', 'r').read())[
+    app_id = json.loads(open(fb_client_secrets, 'r').read())[
         'web']['app_id']
     app_secret = json.loads(
-        open('fb_client_secrets.json', 'r').read())['web']['app_secret']
+        open(fb_client_secrets, 'r').read())['web']['app_secret']
     url = 'https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id=%s&client_secret=%s&fb_exchange_token=%s' % (
         app_id, app_secret, access_token)
     h = httplib2.Http()
@@ -348,7 +325,7 @@ def fbdisconnect():
     result = h.request(url, 'DELETE')[1]
     return "you have been logged out"
 
-############################################################################# end of connect
+########################################################### end of connect
 
 ########################################################### JSON API
 @app.route('/category/json/')
@@ -384,14 +361,10 @@ def showCategories():
 @app.route('/category/new/', methods=['GET', 'POST'])
 @login_required
 def newCategory():
-    # if 'username' not in login_session:
-    #     return redirect('/login')
-
     if request.method == 'POST':
         name = request.form['name']
         description = request.form['description']
         if validate_category_name(name) and validate_category_descrip(description):
-            #dummy_user = session.query(User).filter_by(name="ZGH").one()
 
             newCate = Category(
                 name=name, description=description, user_id=login_session['user_id'])
@@ -422,48 +395,46 @@ def viewCategory(cate):
 
 @app.route('/category/<string:cate>/edit/', methods=['GET', 'POST'])
 @login_required
-# @owner_required(cate=cate)
+# @owner_required
 def editCategory(cate):
-    editCategory = session.query(Category).filter_by(name=cate).one()
-    
-    # if 'username' not in login_session:
-    #     return redirect('/login')
+    cate = session.query(Category).filter_by(name=cate).one()
 
-    if editCategory.user_id != login_session['user_id']:
-        return "<script>function myFunction() {alert('You are not authorized to edit the category. Please create your own category in order to edit.');}</script><body onload='myFunction()''>"
-
-    if not editCategory:
+    if not cate:
         return render_template("404.html", requested_url=request.url)
 
+    if cate.user_id != login_session['user_id']:
+        return "<script>function myFunction() {alert('You are not authorized to edit the object. Please create your own object in order to edit.');}</script><body onload='myFunction()''>"
+
     if request.method == "GET": 
-        return render_template('edit_category.html', cate = editCategory)
+        return render_template('edit_category.html', cate = cate)
     else:
         name = request.form['name']
         description = request.form['description']
         if validate_category_name(name) and validate_category_descrip(description):
-            editCategory.name = name
-            editCategory.description = description
-            session.add(editCategory)
+            cate.name = name
+            cate.description = description
+            session.add(cate)
 
-            flash('Category %s Successfully Updated' % editCategory.name)
+            flash('Category %s Successfully Updated' % cate.name)
             session.commit()
             return redirect(url_for('showCategories'))
         else:
           error ="Some inputs are not valid"
-          return render_template('edit_category.html', cate=editCategory , error = error )
+          return render_template('edit_category.html', cate=cate , error = error )
 
 # # delete a category
 
 @app.route('/category/<string:cate>/delete/', methods=['GET', 'POST'])
 @login_required
+# @owner_required
 def deleteCategory(cate):
     cate = session.query(Category).filter_by(name=cate).one()
-
-    # if 'username' not in login_session:
-    #     return redirect('/login')
-
+    
+    if not cate:
+        return render_template("404.html", requested_url=request.url)
+    
     if cate.user_id != login_session['user_id']:
-        return "<script>function myFunction() {alert('You are not authorized to delete this category. Please create your own category in order to delete.');}</script><body onload='myFunction()''>"
+        return "<script>function myFunction() {alert('You are not authorized to perform this ation. Please create your own category in order to edit.');}</script><body onload='myFunction()''>"
 
     if request.method == "GET": 
         return render_template('delete_category.html', cate = cate)
@@ -515,11 +486,7 @@ def viewItem(cate, item):
 @app.route('/item/new/', methods=['GET', 'POST'])
 @login_required
 def newItem():
-
     cates = session.query(Category).order_by(desc(Category.created)).all()
-
-    # if 'username' not in login_session:
-    #     return redirect('/login')
 
     if request.method == "GET":
         return render_template('new_item.html', cates= cates) 
@@ -560,22 +527,21 @@ def newItem():
 
 @app.route('/category/<string:cate>/item/<string:item>/edit/', methods=['GET', 'POST'])
 @login_required
+# @owner_required
 def editItem(cate, item):
     # if 'username' not in login_session:
     #     return redirect('/login')
+
     cates = session.query(Category).order_by(desc(Category.created)).all()
     cate = session.query(Category).filter_by(name=cate).one()
     item = session.query(Item).filter_by(category_id=cate.id, name=item).first()
-
-    ### check authentication and authority
-    # if 'username' not in login_session:
-    #     return redirect('/login')
-
-    if item.user_id != login_session['user_id']:
-        return "<script>function myFunction() {alert('You are not authorized to edit this item. Please create your own item in order to edit.');}</script><body onload='myFunction()''>"
     
     if (not cate) or (not item):
         return render_template("404.html", requested_url=request.url)
+
+    if item.user_id != login_session['user_id']:
+        return "<script>function myFunction() {alert('You are not authorized to edit the object. Please create your own object in order to edit.');}</script><body onload='myFunction()''>"
+
     if request.method == "GET":
         return render_template('edit_item.html', item = item, cates=cates)
     if request.method == "POST":
@@ -603,21 +569,19 @@ def editItem(cate, item):
 
 @app.route('/category/<string:cate>/item/<string:item>/delete/', methods=['GET', 'POST'])
 @login_required
+# @owner_required
 def deleteItem(cate, item):
 
     cates = session.query(Category).order_by(desc(Category.created)).all()
     cate = session.query(Category).filter_by(name=cate).one()
     item = session.query(Item).filter_by(category_id=cate.id, name=item).first()
-
-    ### check authentication and authority
-    # if 'username' not in login_session:
-    #     return redirect('/login')
-
-    if item.user_id != login_session['user_id']:
-        return "<script>function myFunction() {alert('You are not authorized to delete this item. Please create your own item in order to delete.');}</script><body onload='myFunction()''>"
     
     if (not cate) or (not item):
         return render_template("404.html", requested_url=request.url)
+
+    if item.user_id != login_session['user_id']:
+        return "<script>function myFunction() {alert('You are not authorized to edit the object. Please create your own object in order to edit.');}</script><body onload='myFunction()''>"
+
     if request.method == "GET":
         return render_template('delete_item.html', item = item)
 
@@ -632,8 +596,6 @@ def deleteItem(cate, item):
 
 if __name__ == '__main__':
     app.secret_key = 'super_secret_key'
-    # login_manager = flask_login.LoginManager()
-    # login_manager.init_app(app)
 
     app.debug = True
     app.run(host='0.0.0.0', port=8070)
