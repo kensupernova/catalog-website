@@ -3,6 +3,7 @@ from sqlalchemy.types import DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, backref, sessionmaker
 from sqlalchemy import create_engine
+import os
 
 import datetime
 
@@ -81,9 +82,11 @@ def get_engine():
 
     #engine = create_engine(URL(**DATABASE))
 
-    engine = create_engine('sqlite:///catalogwebsite.db')
+    #db_file = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'catalogwebsite.db')
+    #engine = create_engine('sqlite:///%s' % db_file)
 
     #engine = create_engine('postgresql://catalog:catalog@localhost:5432/catalogdb')
+    
     
     Base.metadata.create_all(engine)
 
