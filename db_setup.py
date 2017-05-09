@@ -1,3 +1,4 @@
+#coding: utf-8
 from sqlalchemy import Column, ForeignKey, Integer, String
 from sqlalchemy.types import DateTime
 from sqlalchemy.ext.declarative import declarative_base
@@ -9,7 +10,7 @@ import datetime
 
 from multiprocessing.util import register_after_fork
 
-from secret import postgresql_conn
+from secret import postgresql_conn_aws, local_psql, local_psql_2, local_sqlite
 
 Base = declarative_base()
 
@@ -75,23 +76,21 @@ class Item(Base):
         }
 
 def get_engine():
-    DATABASE = {
-        'drivername': 'postgresql',
-        'host': 'localhost',
-        'port': '5432',
-        'username': 'catalog',
-        'password': 'catalog',
-        'database': 'catalogdb'
-    }
+    ## method 1: local postsql database
+    # engine = create_engine(URL(**LOCAL_PSQL_DATABASE))
 
-    #engine = create_engine(URL(**DATABASE))
+    ## method 1.1: local postsql
+    #engine = create_engine(local_psql_db_2)
 
-    #db_file = os.path.join(os.path.abspath(os.path.dirname(__file__)), 'catalogwebsite.db')
-    #engine = create_engine('sqlite:///%s' % db_file)
+    ## method 2: local sqlite database
+    
+    engine = create_engine(local_sqlite)
 
-    #engine = create_engine('postgresql://catalog:catalog@localhost:5432/catalogdb')
-    engine = create_engine(postgresql_conn)
+    
+    ## method 3: database on AWS Server
+    # engine = create_engine(postgresql_conn_aws)
 
+    # 注册数据引擎
     register_after_fork(engine, engine.dispose)
     
     Base.metadata.create_all(engine)
