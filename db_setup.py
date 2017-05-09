@@ -7,6 +7,10 @@ import os
 
 import datetime
 
+from multiprocessing.util import register_after_fork
+
+from secret import postgresql_conn
+
 Base = declarative_base()
 
 
@@ -86,7 +90,9 @@ def get_engine():
     #engine = create_engine('sqlite:///%s' % db_file)
 
     #engine = create_engine('postgresql://catalog:catalog@localhost:5432/catalogdb')
-    
+    engine = create_engine(postgresql_conn)
+
+    register_after_fork(engine, engine.dispose)
     
     Base.metadata.create_all(engine)
 

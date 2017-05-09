@@ -6,10 +6,9 @@ from db_setup import Base, Category, User, Item, get_engine, get_DBSession
 session = get_DBSession()
 
 ## clear out the database
-session.query(User).delete()
-session.query(Category).delete()
 session.query(Item).delete()
-
+session.query(Category).delete()
+session.query(User).delete()
 # Create dummy user
 User1 = User(name="ZGH", email="ZGH@udacity.com")
 session.add(User1)
